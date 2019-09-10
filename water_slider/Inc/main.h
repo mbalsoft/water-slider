@@ -61,6 +61,8 @@
 
 #define RED_LED_PC13_Pin GPIO_PIN_13
 #define RED_LED_PC13_GPIO_Port GPIOC
+#define power_meter_Pin GPIO_PIN_0
+#define power_meter_GPIO_Port GPIOA
 #define NRF_CE_Pin GPIO_PIN_3
 #define NRF_CE_GPIO_Port GPIOA
 #define NRF_CSN_Pin GPIO_PIN_4

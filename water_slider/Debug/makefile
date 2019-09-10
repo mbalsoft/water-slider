@@ -30,13 +30,13 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: water_slide.elf
+all: water_slider.elf
 
 # Tool invocations
-water_slide.elf: $(OBJS) $(USER_OBJS) ../STM32F103C8Tx_FLASH.ld
+water_slider.elf: $(OBJS) $(USER_OBJS) ../STM32F103C8Tx_FLASH.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: MCU GCC Linker'
-	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft -specs=nosys.specs -specs=nano.specs -T"../STM32F103C8Tx_FLASH.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "water_slide.elf" @"objects.list" $(USER_OBJS) $(LIBS) -lm
+	arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft -specs=nosys.specs -specs=nano.specs -T"../STM32F103C8Tx_FLASH.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "water_slider.elf" @"objects.list" $(USER_OBJS) $(LIBS) -lm
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
@@ -48,8 +48,8 @@ clean:
 
 post-build:
 	-@echo 'Generating binary and Printing size information:'
-	arm-none-eabi-objcopy -O binary "water_slide.elf" "water_slide.bin"
-	arm-none-eabi-size "water_slide.elf"
+	arm-none-eabi-objcopy -O binary "water_slider.elf" "water_slider.bin"
+	arm-none-eabi-size "water_slider.elf"
 	-@echo ' '
 
 .PHONY: all clean dependents

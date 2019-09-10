@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=C:/src/STM32/STM32F103C8T6minmum/water_s_joystick/Inc
+HeaderPath=C:/src/STM32/STM32F103C8T6minmum/water-slider/water_s_joystick/Inc
 HeaderFiles=usb_device.h;usbd_conf.h;usbd_desc.h;usbd_cdc_if.h;stm32f1xx_it.h;stm32f1xx_hal_conf.h;main.h;
-SourcePath=C:/src/STM32/STM32F103C8T6minmum/water_s_joystick/Src
+SourcePath=C:/src/STM32/STM32F103C8T6minmum/water-slider/water_s_joystick/Src
 SourceFiles=usb_device.c;usbd_conf.c;usbd_desc.c;usbd_cdc_if.c;stm32f1xx_it.c;stm32f1xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]

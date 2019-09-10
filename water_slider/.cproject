@@ -19,7 +19,7 @@
 						<toolChain id="fr.ac6.managedbuild.toolchain.gnu.cross.exe.debug.1302091537" name="Ac6 STM32 MCU GCC" superClass="fr.ac6.managedbuild.toolchain.gnu.cross.exe.debug">
 							<option id="fr.ac6.managedbuild.option.gnu.cross.prefix.2032914696" name="Prefix" superClass="fr.ac6.managedbuild.option.gnu.cross.prefix" value="arm-none-eabi-" valueType="string" />
 							<option id="fr.ac6.managedbuild.option.gnu.cross.mcu.160612662" name="Mcu" superClass="fr.ac6.managedbuild.option.gnu.cross.mcu" value="STM32F103C8Tx" valueType="string" />
-							<option id="fr.ac6.managedbuild.option.gnu.cross.board.2057188529" name="Board" superClass="fr.ac6.managedbuild.option.gnu.cross.board" value="water_slide" valueType="string" />
+							<option id="fr.ac6.managedbuild.option.gnu.cross.board.2057188529" name="Board" superClass="fr.ac6.managedbuild.option.gnu.cross.board" value="water_slider" valueType="string" />
 							<option id="fr.ac6.managedbuild.option.gnu.cross.instructionSet.1542915211" name="Instruction Set" superClass="fr.ac6.managedbuild.option.gnu.cross.instructionSet" value="fr.ac6.managedbuild.option.gnu.cross.instructionSet.thumbII" valueType="enumerated" />
 							<option id="fr.ac6.managedbuild.option.gnu.cross.fpu.1938690645" name="Floating point hardware" superClass="fr.ac6.managedbuild.option.gnu.cross.fpu" value="fr.ac6.managedbuild.option.gnu.cross.fpu.no" valueType="enumerated" />
 							<option id="fr.ac6.managedbuild.option.gnu.cross.floatabi.1419981642" name="Floating-point ABI" superClass="fr.ac6.managedbuild.option.gnu.cross.floatabi" value="fr.ac6.managedbuild.option.gnu.cross.floatabi.soft" valueType="enumerated" />
@@ -134,7 +134,7 @@
 						<toolChain id="fr.ac6.managedbuild.toolchain.gnu.cross.exe.release.2001789358" name="Ac6 STM32 MCU GCC" superClass="fr.ac6.managedbuild.toolchain.gnu.cross.exe.release">
 							<option id="fr.ac6.managedbuild.option.gnu.cross.prefix.2032914696" name="Prefix" superClass="fr.ac6.managedbuild.option.gnu.cross.prefix" value="arm-none-eabi-" valueType="string" />
 							<option id="fr.ac6.managedbuild.option.gnu.cross.mcu.160612662" name="Mcu" superClass="fr.ac6.managedbuild.option.gnu.cross.mcu" value="STM32F103C8Tx" valueType="string" />
-							<option id="fr.ac6.managedbuild.option.gnu.cross.board.2057188529" name="Board" superClass="fr.ac6.managedbuild.option.gnu.cross.board" value="water_slide" valueType="string" />
+							<option id="fr.ac6.managedbuild.option.gnu.cross.board.2057188529" name="Board" superClass="fr.ac6.managedbuild.option.gnu.cross.board" value="water_slider" valueType="string" />
 							<option id="fr.ac6.managedbuild.option.gnu.cross.instructionSet.1542915211" name="Instruction Set" superClass="fr.ac6.managedbuild.option.gnu.cross.instructionSet" value="fr.ac6.managedbuild.option.gnu.cross.instructionSet.thumbII" valueType="enumerated" />
 							<option id="fr.ac6.managedbuild.option.gnu.cross.fpu.1938690645" name="Floating point hardware" superClass="fr.ac6.managedbuild.option.gnu.cross.fpu" value="fr.ac6.managedbuild.option.gnu.cross.fpu.no" valueType="enumerated" />
 							<option id="fr.ac6.managedbuild.option.gnu.cross.floatabi.1419981642" name="Floating-point ABI" superClass="fr.ac6.managedbuild.option.gnu.cross.floatabi" value="fr.ac6.managedbuild.option.gnu.cross.floatabi.soft" valueType="enumerated" />
@@ -244,7 +244,7 @@
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders" />
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration artifactName="${ProjName}" configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="water_slide" />
+			<resource resourceType="PROJECT" workspacePath="water_slider" />
 		</configuration>
 	</storageModule>
 </cproject>

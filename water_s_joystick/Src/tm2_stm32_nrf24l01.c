@@ -56,6 +56,20 @@ uint8_t tm2_NRF24L01_Init( NRF24L01_config_TypeDef *nrf_config ) {
 	control_value = tm2_NRF24L01_ReadRegister( nrf_config, NRF24L01_REG_RF_CH );
 	if( control_value != nrf_config->radio_channel ) return 2;
 
+	//P0
+	tm2_NRF24L01_WriteRegisterMulti( nrf_config, NRF24L01_REG_RX_ADDR_P0, nrf_config->tx_address, 5 );
+
+	//P1
+	tm2_NRF24L01_WriteRegisterMulti( nrf_config, NRF24L01_REG_RX_ADDR_P1, nrf_config->rx_address, 5 );
+
+	tm2_NRF24L01_WriteRegister( nrf_config, NRF24L01_REG_RX_ADDR_P2, NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P2 );
+	tm2_NRF24L01_WriteRegister( nrf_config, NRF24L01_REG_RX_ADDR_P3, NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P3 );
+	tm2_NRF24L01_WriteRegister( nrf_config, NRF24L01_REG_RX_ADDR_P4, NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P4 );
+	tm2_NRF24L01_WriteRegister( nrf_config, NRF24L01_REG_RX_ADDR_P5, NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P5 );
+
+	//TX
+	tm2_NRF24L01_WriteRegisterMulti( nrf_config, NRF24L01_REG_TX_ADDR, nrf_config->tx_address, 5 );
+
 	/* Set pipeline to max possible 32 bytes */
 	tm2_NRF24L01_WriteRegister( nrf_config, NRF24L01_REG_RX_PW_P0, nrf_config->payload_len ); // Auto-ACK pipe
 	tm2_NRF24L01_WriteRegister( nrf_config, NRF24L01_REG_RX_PW_P1, nrf_config->payload_len ); // Data payload pipe

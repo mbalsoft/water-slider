@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-<ProjectName>C:\src\STM32\STM32F103C8T6minmum\water_slide\\water_slide</ProjectName>
+<ProjectName>C:\src\STM32\STM32F103C8T6minmum\water-slider\water_slider\\water_slider</ProjectName>
 <ProjectNature>C</ProjectNature> 
 <CMSIS>..\Drivers\CMSIS</CMSIS>
 <HAL_Driver>C:\Users\bialema4\STM32Cube\Repository\STM32Cube_FW_F1_V1.6.1\Drivers\CMSIS</HAL_Driver>
@@ -22,7 +22,7 @@
 
 <configs>
   <config>
-    <name>water_slide</name>				
+    <name>water_slider</name>				
     <device>STM32F103C8Tx</device>		 
     <heapSize>0x200</heapSize>
     <stackSize>0x400</stackSize>

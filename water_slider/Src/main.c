@@ -58,6 +58,8 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
@@ -65,21 +67,39 @@ SPI_HandleTypeDef hspi1;
 
 NRF24L01_config_TypeDef nrf_rx_cfg;
 
+uint16_t mili_seconds;
+uint8_t  one_second_flag;
+
+//uint16_t PomiarADC;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
 void usb_receive_interrupt( uint8_t );
+void usb_receive_bytes( uint8_t* Buf, uint32_t *Len );
+int adc_read( uint32_t );
+void send_int_via_usb( uint16_t, uint16_t );
+void SysTick_Interrupt( void );
 
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+//int __io_putchar(int ch)
+//{
+// if (ch == '\n')
+// send_char('\r');
+// send_char(ch);
+// return ch;
+//}
 
 /* USER CODE END 0 */
 
@@ -97,6 +117,9 @@ int main(void)
   uint8_t led_idn;
   uint8_t engine_left;
   uint8_t engine_right;
+  uint8_t one_second_counter = 0;
+  uint16_t batery_level;
+  //uint16_t vref_level;
 
   // NRF transmission status
   TM_NRF24L01_Transmit_Status_t transmissionStatus;
@@ -109,6 +132,9 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+
+  mili_seconds    = 0;
+  one_second_flag = 0;
 
   /* USER CODE END Init */
 
@@ -123,6 +149,7 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   MX_USB_DEVICE_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
   // turn OFF LED
@@ -134,6 +161,10 @@ int main(void)
   HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port, RIGHT_IA_Pin, GPIO_PIN_SET );
   HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port, RIGHT_IB_Pin, GPIO_PIN_SET );
 
+  __HAL_RCC_ADC1_CLK_ENABLE();
+  HAL_ADCEx_Calibration_Start( &hadc1 );
+  HAL_ADC_Start( &hadc1 );
+
   nrf_rx_cfg.CE_pin          = NRF_CE_Pin;
   nrf_rx_cfg.CE_port         = NRF_CE_GPIO_Port;
   nrf_rx_cfg.CSN_pin         = NRF_CSN_Pin;
@@ -141,8 +172,8 @@ int main(void)
   nrf_rx_cfg.SPI             = &hspi1;
   nrf_rx_cfg.radio_channel   = 15;
   nrf_rx_cfg.baud_rate       = TM_NRF24L01_DataRate_1M;
-  nrf_rx_cfg.payload_len     = 1;
-  nrf_rx_cfg.crc_len         = 1;
+  nrf_rx_cfg.payload_len     = 32;
+  nrf_rx_cfg.crc_len         = 2;
   nrf_rx_cfg.output_power    = TM_NRF24L01_OutputPower_0dBm;
   nrf_rx_cfg.rx_address[ 0 ] = 0x7E;
   nrf_rx_cfg.rx_address[ 1 ] = 0x7E;
@@ -166,9 +197,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_Delay( 100 );
+	  HAL_Delay( 50 );
 	  HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_SET );
 	  if( tm2_NRF24L01_DataReady( &nrf_rx_cfg )) {
+		one_second_counter = 0;
 		HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_RESET );
 		/* Get data from NRF24L01+ */
 		tm2_NRF24L01_GetData( &nrf_rx_cfg, dataIn );
@@ -195,12 +227,12 @@ int main(void)
 
 		switch( engine_right ) {
 		  //forward
-		  case 1 : HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port,  RIGHT_IA_Pin,  GPIO_PIN_RESET );
-		           HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port,  RIGHT_IB_Pin,  GPIO_PIN_SET );
+		  case 1 : HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port,  RIGHT_IA_Pin,  GPIO_PIN_SET );
+		           HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port,  RIGHT_IB_Pin,  GPIO_PIN_RESET );
 		           break;
 		  //backward
-		  case 2 : HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port,  RIGHT_IA_Pin,  GPIO_PIN_SET );
-		           HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port,  RIGHT_IB_Pin,  GPIO_PIN_RESET );
+		  case 2 : HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port,  RIGHT_IA_Pin,  GPIO_PIN_RESET );
+		           HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port,  RIGHT_IB_Pin,  GPIO_PIN_SET );
 		           break;
 		  //stop
 		  default : HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port,  RIGHT_IA_Pin,  GPIO_PIN_SET );
@@ -218,15 +250,30 @@ int main(void)
 	  }
 	  // no coveridge - no communication with pilot
 	  else {
-		  HAL_GPIO_WritePin( LEFT_IA_GPIO_Port,  LEFT_IA_Pin,  GPIO_PIN_SET );
-		  HAL_GPIO_WritePin( LEFT_IB_GPIO_Port,  LEFT_IB_Pin,  GPIO_PIN_SET );
-		  HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port,  RIGHT_IA_Pin,  GPIO_PIN_SET );
-		  HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port,  RIGHT_IB_Pin,  GPIO_PIN_SET );
+		  one_second_counter++;
+		  if( one_second_counter > 20 ) {
+			  one_second_counter = 0;
+			  HAL_GPIO_WritePin( LEFT_IA_GPIO_Port,  LEFT_IA_Pin,  GPIO_PIN_SET );
+			  HAL_GPIO_WritePin( LEFT_IB_GPIO_Port,  LEFT_IB_Pin,  GPIO_PIN_SET );
+			  HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port, RIGHT_IA_Pin, GPIO_PIN_SET );
+			  HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port, RIGHT_IB_Pin, GPIO_PIN_SET );
+		  }
 	  }
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
+	if( one_second_flag > 0 ) {
+		if( HAL_ADC_PollForConversion( &hadc1, 1000 ) == HAL_OK ) {
+			batery_level = HAL_ADC_GetValue( &hadc1 );
+			send_int_via_usb( batery_level, 0 );
+			HAL_ADC_Start( &hadc1 );
+		}
+		one_second_flag = 0;
+		mili_seconds    = 0;
+	}
+//	  batery_level = adc_read( ADC_CHANNEL_0 ); //* 3.3f / 4096.0f * 3
+//	  vref_level  = adc_read( ADC_CHANNEL_VREFINT ); //* 3.3f / 4096.0f
+//	  send_int_via_usb( batery_level, vref_level );
   }
   /* USER CODE END 3 */
 
@@ -262,7 +309,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
@@ -271,7 +318,8 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_USB;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV8;
   PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
@@ -292,6 +340,38 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* ADC1 init function */
+static void MX_ADC1_Init(void)
+{
+
+  ADC_ChannelConfTypeDef sConfig;
+
+    /**Common config 
+    */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure Regular Channel 
+    */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* SPI1 init function */
 static void MX_SPI1_Init(void)
 {
@@ -304,7 +384,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -402,6 +482,94 @@ void usb_receive_interrupt( uint8_t received_byte ) {
 	             HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port,  RIGHT_IA_Pin,  GPIO_PIN_SET );
                  HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port,  RIGHT_IB_Pin,  GPIO_PIN_SET );
 	             break;
+	}
+}
+
+void usb_receive_bytes( uint8_t* Buf, uint32_t *Len ) {
+	switch (Buf[0]) {
+	case 'V':
+		HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_RESET);
+		break;
+	case 'v':
+		HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_SET);
+		break;
+	case 'L':
+		HAL_GPIO_WritePin( LEFT_IA_GPIO_Port, LEFT_IA_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin( LEFT_IB_GPIO_Port, LEFT_IB_Pin, GPIO_PIN_RESET);
+		break;
+	case 'K':
+		HAL_GPIO_WritePin( LEFT_IA_GPIO_Port, LEFT_IA_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin( LEFT_IB_GPIO_Port, LEFT_IB_Pin, GPIO_PIN_SET);
+		break;
+	case 'l':
+		HAL_GPIO_WritePin( LEFT_IA_GPIO_Port, LEFT_IA_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin( LEFT_IB_GPIO_Port, LEFT_IB_Pin, GPIO_PIN_SET);
+		break;
+	case 'R':
+		HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port, RIGHT_IA_Pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port, RIGHT_IB_Pin, GPIO_PIN_SET);
+		break;
+	case 'E':
+		HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port, RIGHT_IA_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port, RIGHT_IB_Pin, GPIO_PIN_RESET);
+		break;
+	case 'r':
+		HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port, RIGHT_IA_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port, RIGHT_IB_Pin, GPIO_PIN_SET);
+		break;
+	case 's':
+	case 'S':
+		HAL_GPIO_WritePin( LEFT_IA_GPIO_Port, LEFT_IA_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin( LEFT_IB_GPIO_Port, LEFT_IB_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin( RIGHT_IA_GPIO_Port, RIGHT_IA_Pin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin( RIGHT_IB_GPIO_Port, RIGHT_IB_Pin, GPIO_PIN_SET);
+		break;
+	}
+}
+
+int adc_read( uint32_t channel )
+{
+  ADC_ChannelConfTypeDef adc_ch;
+
+  adc_ch.Channel = channel;
+  adc_ch.Rank = ADC_REGULAR_RANK_1;
+  adc_ch.SamplingTime = ADC_SAMPLETIME_239CYCLES_5; //ADC_SAMPLETIME_13CYCLES_5; ADC_SAMPLETIME_1CYCLE_5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &adc_ch) != HAL_OK)
+  {
+    return -1;
+  }
+
+  HAL_ADC_Start( &hadc1 );
+  HAL_ADC_PollForConversion( &hadc1, 1000 );
+  if( HAL_ADC_PollForConversion( &hadc1, 1000 ) == HAL_OK ) {
+    return HAL_ADC_GetValue( &hadc1 );
+  }
+  return -2;
+}
+
+void send_int_via_usb( uint16_t int_to_send1, uint16_t int_to_send2 )
+{
+	char _str[100];
+	TM_NRF24L01_Transmit_Status_t transmissionStatus;
+
+	sprintf( _str, "V %d %d\r\n", int_to_send1, int_to_send2 );
+	CDC_Transmit_FS( _str, strlen( _str ));
+	HAL_Delay( 1 );
+
+  tm2_NRF24L01_Transmit( &nrf_rx_cfg, _str );
+  /* Wait for data to be sent */
+  do {
+	/* Get transmission status */
+	transmissionStatus = tm2_NRF24L01_GetTransmissionStatus( &nrf_rx_cfg );
+  } while( transmissionStatus == TM_NRF24L01_Transmit_Status_Sending );
+  tm2_NRF24L01_PowerUpRx( &nrf_rx_cfg );
+}
+
+void SysTick_Interrupt( void ) {
+	mili_seconds++;
+	if( mili_seconds >= 1000 ) {
+		mili_seconds = 0;
+		one_second_flag = 1;
 	}
 }
 

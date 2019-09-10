@@ -62,6 +62,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 extern void usb_receive_interrupt( uint8_t );
+extern void usb_receive_bytes( uint8_t* Buf, uint32_t *Len );
 
 /* USER CODE END PV */
 
@@ -294,9 +295,11 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
 
-  for( uint32_t loop = 0; loop < *Len; loop++ ) {
-	  usb_receive_interrupt( Buf[ loop ]);
-  }
+//  for( uint32_t loop = 0; loop < *Len; loop++ ) {
+//	  usb_receive_interrupt( Buf[ loop ]);
+//  }
+
+  usb_receive_bytes( Buf, Len );
 
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);

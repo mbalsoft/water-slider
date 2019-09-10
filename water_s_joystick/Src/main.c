@@ -59,12 +59,13 @@
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
-uint8_t  nrf_init_result;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
 NRF24L01_config_TypeDef nrf_tx_cfg;
+
+uint8_t nrf_init_result;
 
 /* USER CODE END PV */
 
@@ -78,6 +79,7 @@ static void MX_SPI1_Init(void);
 
 void int8_to_bin( int8_t x, int8_t *_buf );
 void usb_receive_interrupt( uint8_t );
+void usb_receive_bytes( uint8_t* Buf, uint32_t *Len );
 
 /* USER CODE END PFP */
 
@@ -95,6 +97,8 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
 	  // for received data
+	  //uint8_t dataIn[32];
+	  uint8_t loop;
 	  uint8_t text_to_show[ 100 ];
 
 	  // NRF transmission status
@@ -133,8 +137,8 @@ int main(void)
   nrf_tx_cfg.SPI             = &hspi1;
   nrf_tx_cfg.radio_channel   = 15;
   nrf_tx_cfg.baud_rate       = TM_NRF24L01_DataRate_1M;
-  nrf_tx_cfg.payload_len     = 1;
-  nrf_tx_cfg.crc_len         = 1;
+  nrf_tx_cfg.payload_len     = 32;
+  nrf_tx_cfg.crc_len         = 2;
   nrf_tx_cfg.output_power    = TM_NRF24L01_OutputPower_0dBm;
   nrf_tx_cfg.rx_address[ 0 ] = 0xE7;
   nrf_tx_cfg.rx_address[ 1 ] = 0xE7;
@@ -152,13 +156,28 @@ int main(void)
   tm2_NRF24L01_Clear_Interrupts( &nrf_tx_cfg );
   HAL_Delay( 100 );
 
+  //turn off power alarm LED
+  HAL_GPIO_WritePin( LED_power_ALARM_GPIO_Port, LED_power_ALARM_Pin, GPIO_PIN_SET );
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_Delay( 100 );
+	  HAL_Delay( 25 );
+
+	    if( tm2_NRF24L01_DataReady( &nrf_tx_cfg )) {
+	    	HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_RESET );
+	    	for( loop = 0; loop < 33; loop++ ) text_to_show[ loop ] = 0;
+	    	tm2_NRF24L01_GetData( &nrf_tx_cfg, text_to_show );
+	    	CDC_Transmit_FS( text_to_show, strlen( text_to_show ));
+	    	HAL_Delay( 10 );
+	    }
+	    else {
+	    	HAL_Delay( 25 );
+	    }
+
 	  HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_SET );
 	  tmp_char = 0x01;
 	  if( ! HAL_GPIO_ReadPin( RIGHT_UP_GPIO_Port, RIGHT_UP_Pin )) {
@@ -177,41 +196,40 @@ int main(void)
 		  tmp_char |= 0x08;
 		  HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_RESET );
 	  }
-	  int8_to_bin( tmp_char, text_to_show );
-	  text_to_show[ 8 ] = 13;
-	  text_to_show[ 9 ] = 10;
-	  if( tmp_char != 0 ) CDC_Transmit_FS( text_to_show, 10 );
-	  HAL_Delay( 1 );
+	  //int8_to_bin( tmp_char, text_to_show );
+	  //text_to_show[ 8 ] = 13;
+	  //text_to_show[ 9 ] = 10;
+	  //if( tmp_char != 0 ) ; //CDC_Transmit_FS( text_to_show, 10 );
+	  //HAL_Delay( 1 );
 	  tm2_NRF24L01_Transmit( &nrf_tx_cfg, &tmp_char );
 	  /* Wait for data to be sent */
 	  do {
 		/* Get transmission status */
 		transmissionStatus = tm2_NRF24L01_GetTransmissionStatus( &nrf_tx_cfg );
 	  } while( transmissionStatus == TM_NRF24L01_Transmit_Status_Sending );
-	  //HAL_Delay( 5 );
+	  HAL_Delay( 5 );
 	  tm2_NRF24L01_PowerUpRx( &nrf_tx_cfg );
 
 	  /* Check transmit status */
-		if (transmissionStatus == TM_NRF24L01_Transmit_Status_Ok) {
-			/* Transmit went OK */
-			text_to_show[ 0 ] = 'O';
-			text_to_show[ 1 ] = 'K';
-		} else if (transmissionStatus == TM_NRF24L01_Transmit_Status_Lost) {
-			/* Message was LOST */
-			text_to_show[ 0 ] = 'n';
-			text_to_show[ 1 ] = 'n';
-		} else {
-			/* This should never happen */
-
-		}
-		text_to_show[ 2 ] = ' ';
-		if( tmp_char != 0 ) CDC_Transmit_FS( text_to_show, 3 );
-		HAL_Delay( 1 );
+//		if (transmissionStatus == TM_NRF24L01_Transmit_Status_Ok) {
+//			/* Transmit went OK */
+//			text_to_show[ 0 ] = 'O';
+//			text_to_show[ 1 ] = 'K';
+//		} else if (transmissionStatus == TM_NRF24L01_Transmit_Status_Lost) {
+//			/* Message was LOST */
+//			text_to_show[ 0 ] = 'n';
+//			text_to_show[ 1 ] = 'n';
+//		} else {
+//			/* This should never happen */
+//
+//		}
+//		text_to_show[ 2 ] = ' ';
+//		if( tmp_char != 0 ) CDC_Transmit_FS( text_to_show, 3 );
+//		HAL_Delay( 1 );
 
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-
   }
   /* USER CODE END 3 */
 
@@ -247,7 +265,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
@@ -287,7 +305,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -321,13 +339,19 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, NRF_CE_Pin|NRF_CSN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LED_power_ALARM_Pin|NRF_CE_Pin|NRF_CSN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : RED_LED_PC13_Pin */
   GPIO_InitStruct.Pin = RED_LED_PC13_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RED_LED_PC13_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LED_power_ALARM_Pin */
+  GPIO_InitStruct.Pin = LED_power_ALARM_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED_power_ALARM_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : NRF_CE_Pin NRF_CSN_Pin */
   GPIO_InitStruct.Pin = NRF_CE_Pin|NRF_CSN_Pin;
@@ -376,6 +400,17 @@ void usb_receive_interrupt( uint8_t received_byte ) {
 	             break;
 	  default  :
 	             break;
+	}
+}
+
+void usb_receive_bytes( uint8_t* Buf, uint32_t *Len ) {
+	switch (Buf[0]) {
+	case 'V':
+		HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_RESET);
+		break;
+	case 'v':
+		HAL_GPIO_WritePin( RED_LED_PC13_GPIO_Port, RED_LED_PC13_Pin, GPIO_PIN_SET);
+		break;
 	}
 }
 
